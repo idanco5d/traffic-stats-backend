@@ -1,3 +1,5 @@
+import math
+
 import json
 import re
 
@@ -9,11 +11,21 @@ def get(req: https_fn.Request, db: Client) -> https_fn.Response:
     page_size = 10
     offset = int(req.args.get("offset", 0))
 
+    total_entries = db.collection("trafficStats").count().get()[0][0].value
+    total_pages = math.ceil(total_entries / page_size)
+    current_page = (offset // page_size) + 1
+
     docs = db.collection("trafficStats") \
         .offset(offset) \
         .limit(page_size) \
         .stream()
-    result = [{**doc.to_dict(), "id": doc.id} for doc in docs]
+
+    result = {
+        "data": [{**doc.to_dict(), "id": doc.id} for doc in docs],
+        "page": current_page,
+        "totalPages": total_pages,
+        "totalEntries": total_entries,
+    }
 
     return https_fn.Response(json.dumps(result), content_type="application/json")
 
