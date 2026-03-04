@@ -1,5 +1,3 @@
-import math
-
 import json
 import re
 
@@ -7,25 +5,10 @@ from firebase_functions import https_fn
 from google.cloud.firestore_v1 import Client
 
 
-def get(req: https_fn.Request, db: Client) -> https_fn.Response:
-    page_size = 10
-    offset = int(req.args.get("offset", 0))
+def get(db: Client) -> https_fn.Response:
+    docs = db.collection("trafficStats").stream()
 
-    total_entries = db.collection("trafficStats").count().get()[0][0].value
-    total_pages = math.ceil(total_entries / page_size)
-    current_page = (offset // page_size) + 1
-
-    docs = db.collection("trafficStats") \
-        .offset(offset) \
-        .limit(page_size) \
-        .stream()
-
-    result = {
-        "data": [{**doc.to_dict(), "id": doc.id} for doc in docs],
-        "page": current_page,
-        "totalPages": total_pages,
-        "totalEntries": total_entries,
-    }
+    result = [{**doc.to_dict(), "id": doc.id} for doc in docs]
 
     return https_fn.Response(json.dumps(result), content_type="application/json")
 

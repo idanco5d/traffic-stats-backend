@@ -1,5 +1,5 @@
 from firebase_admin import initialize_app, firestore, auth
-from firebase_functions import https_fn
+from firebase_functions import https_fn, options
 from firebase_functions.options import set_global_options
 
 import https_method_handlers
@@ -8,14 +8,13 @@ set_global_options(max_instances=2)
 initialize_app()
 db = firestore.client()
 
-@https_fn.on_request()
 def on_request(req: https_fn.Request) -> https_fn.Response:
     if not is_authenticated(req):
         return https_fn.Response(status=401)
 
     match req.method:
         case "GET":
-            return https_method_handlers.get(req, db)
+            return https_method_handlers.get(db)
         case "POST":
             return https_method_handlers.post(req, db)
         case "PUT":

@@ -39,42 +39,18 @@ def make_doc_ref(doc_id: str, data: dict, exists: bool = True):
 # ---------------------------------------------------------------------------
 
 class TestGet:
-    def test_fetch_first_page(self):
-        doc = make_doc("abc123", {"date": "2024-01-01", "visits": 5})
+    def test_get(self):
+        doc1 = make_doc("abc123", {"date": "2024-01-01", "visits": 5})
+        doc2 = make_doc("def456", {"date": "2025-01-01", "visits": 2})
         db = MagicMock()
-        db.collection.return_value.offset.return_value.limit.return_value.stream.return_value = [doc]
-        db.collection.return_value.count.return_value.get.return_value = [[MagicMock(value=1)]]
+        db.collection.return_value.stream.return_value = [doc1, doc2]
 
-        req = make_request(args={"offset": "0"})
-        response = get(req, db)
+        response = get(db)
 
         assert response.status_code == 200
         body = json.loads(response.get_data())
-        assert body["totalEntries"] == 1
-        assert body["page"] == 1
-        assert body["totalPages"] == 1
-        assert len(body["data"]) == 1
-        assert body["data"][0] == {"id": "abc123", "date": "2024-01-01", "visits": 5}
-        db.collection.return_value.offset.assert_called_once_with(0)
-
-    def test_fetch_second_page(self):
-        doc = make_doc("def456", {"date": "2024-01-11", "visits": 3})
-        db = MagicMock()
-        db.collection.return_value.offset.return_value.limit.return_value.stream.return_value = [doc]
-        db.collection.return_value.count.return_value.get.return_value = [[MagicMock(value=11)]]
-
-        req = make_request(args={"offset": "10"})
-        response = get(req, db)
-
-        assert response.status_code == 200
-        body = json.loads(response.get_data())
-        assert body["totalEntries"] == 11
-        assert body["page"] == 2
-        assert body["totalPages"] == 2
-        assert len(body["data"]) == 1
-        assert body["data"][0]["id"] == "def456"
-        db.collection.return_value.offset.assert_called_once_with(10)
-
+        assert body[0] == {"id": "abc123", "date": "2024-01-01", "visits": 5}
+        assert body[1] == {"id": "def456", "date": "2025-01-01", "visits": 2}
 
 # ---------------------------------------------------------------------------
 # POST
