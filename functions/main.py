@@ -1,14 +1,19 @@
-from firebase_admin import initialize_app, firestore, auth
+import firebase_admin
+from firebase_admin import firestore, auth
 from firebase_functions import https_fn, options
 from firebase_functions.options import set_global_options
 
 import https_method_handlers
 
 set_global_options(max_instances=2)
-initialize_app()
-db = firestore.client()
+try:
+    firebase_admin.get_app()
+except ValueError:
+    firebase_admin.initialize_app()
 
+@https_fn.on_request()
 def on_request(req: https_fn.Request) -> https_fn.Response:
+    db = firestore.client()
     if not is_authenticated(req):
         return https_fn.Response(status=401)
 
@@ -23,6 +28,9 @@ def on_request(req: https_fn.Request) -> https_fn.Response:
             return https_method_handlers.delete(req, db)
 
     return https_fn.Response(status=405)
+
+def get_db():
+    return firestore.client()
 
 def is_authenticated(req: https_fn.Request) -> bool:
     authorization = req.headers.get("Authorization", "")
